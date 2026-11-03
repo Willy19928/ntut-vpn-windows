@@ -1,0 +1,16 @@
+* text=auto
+
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+LICENSE text eol=lf
+*.md text eol=lf
+*.js text eol=lf
+*.cs text eol=lf
+*.ps1 text eol=crlf
+SHA256SUMS text eol=lf
+
+# UTF-16LE with mixed line endings; packed byte for byte.
+src/vpnc-script-win.js -text
+*.exe binary
+*.dll binary
