@@ -120,7 +120,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Sel
 
 1. 依 `vendor/openconnect-9.21/SHA256SUMS` 核對 OpenConnect 檔案。
 2. 把執行檔案與本專案原始碼分別打包成 ZIP，以 Base64 嵌入 `src/NTUT-VPN.ps1`，並寫入套件的 SHA-256。同一份原始碼每次產生的 PS1 位元組相同。
-3. 下載固定 commit 的 [PS2EXE](https://github.com/MScholtes/PS2EXE) 並比對 SHA-256，編譯成 x64 主控台 EXE。EXE 版的提升權限改為重新啟動自己。
+3. 下載固定 commit 的 [PS2EXE](https://github.com/MScholtes/PS2EXE) 並比對 SHA-256，編譯成 x64 主控台 EXE，並嵌入 `assets/NTUT-VPN.ico` 圖示。EXE 版的提升權限改為重新啟動自己。
 4. 加上 `-SelfTest` 時執行 EXE 的自我檢查。只要 PS1 時可加 `-SkipExe`，不需要網路。
 
 ### 專案結構
@@ -133,6 +133,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Sel
 | `src/vpnc-script-win.js` | 修改過的 vpnc-script（UTF-16LE），加入既有路由核對與錯誤診斷 |
 | `src/route-helpers.js` | 上述修改的獨立副本，方便閱讀 |
 | `vendor/openconnect-9.21/` | 官方 OpenConnect v9.21 Windows CI 產物中的執行檔與 DLL，未修改 |
+| `assets/NTUT-VPN.ico` | EXE 圖示，由 `scripts/make-icon.ps1` 產生 |
 
 ## OpenConnect 來源
 

@@ -14,3 +14,4 @@ SHA256SUMS text eol=lf
 src/vpnc-script-win.js -text
 *.exe binary
 *.dll binary
+*.ico binary

@@ -12,7 +12,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$Version = '1.2.4.0'
+$Version = '1.2.5.0'
 $Ps2ExeCommit = '05c62615b33864c177f5de8e56e06e4c7f34adbb'
 $Ps2ExeSha256 = '94613E703FA2EC67A01255E5917A056A9406FD31C557685B7AE76417F706A09A'
 
@@ -116,8 +116,10 @@ if (!$SkipExe) {
     # PS2EXE reads unset variables, which strict mode rejects.
     Set-StrictMode -Off
     . $ps2exe
+    $icon = Join-Path $root 'assets\NTUT-VPN.ico'
+    if (!(Test-Path -LiteralPath $icon)) { throw 'assets\NTUT-VPN.ico is missing.' }
     Invoke-ps2exe -inputFile $embeddedPath -outputFile $exeOut -x64 -supportOS `
-        -title 'NTUT VPN' -product 'NTUT VPN' -version $Version
+        -iconFile $icon -title 'NTUT VPN' -product 'NTUT VPN' -version $Version
     if (!(Test-Path -LiteralPath $exeOut)) { throw 'PS2EXE did not produce NTUT-VPN.exe.' }
 
     # A file scanner can hold a freshly written EXE for a while; wait until it can be read in full.
