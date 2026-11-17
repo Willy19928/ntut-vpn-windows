@@ -12,7 +12,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$Version = '1.2.5.0'
+$Version = '1.2.6.0'
 $Ps2ExeCommit = '05c62615b33864c177f5de8e56e06e4c7f34adbb'
 $Ps2ExeSha256 = '94613E703FA2EC67A01255E5917A056A9406FD31C557685B7AE76417F706A09A'
 

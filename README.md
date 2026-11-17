@@ -123,6 +123,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Sel
 3. 下載固定 commit 的 [PS2EXE](https://github.com/MScholtes/PS2EXE) 並比對 SHA-256，編譯成 x64 主控台 EXE，並嵌入 `assets/NTUT-VPN.ico` 圖示。EXE 版的提升權限改為重新啟動自己。
 4. 加上 `-SelfTest` 時執行 EXE 的自我檢查。只要 PS1 時可加 `-SkipExe`，不需要網路。
 
+重連時狀態檔的競爭狀況有獨立測試，不會連線或變更網路設定：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Test-StateRace.ps1
+```
+
 ### 專案結構
 
 | 路徑 | 內容 |
@@ -134,6 +140,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Sel
 | `src/route-helpers.js` | 上述修改的獨立副本，方便閱讀 |
 | `vendor/openconnect-9.21/` | 官方 OpenConnect v9.21 Windows CI 產物中的執行檔與 DLL，未修改 |
 | `assets/NTUT-VPN.ico` | EXE 圖示，由 `scripts/make-icon.ps1` 產生 |
+| `tests/Test-StateRace.ps1` | 重連時狀態檔被佔用或殘留的回歸測試 |
 
 ## OpenConnect 來源
 

@@ -24,6 +24,30 @@ namespace NtutVpn {
             }
             return line;
         }
+        // Read without blocking the hook scripts: they may delete or rewrite the
+        // file at any moment, so allow both while it is open here.
+        public static string ReadShared(string path) {
+            try {
+                using (var stream = new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read,
+                    System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete))
+                using (var reader = new System.IO.StreamReader(stream, System.Text.Encoding.Default, true))
+                    return reader.ReadToEnd();
+            } catch (System.IO.IOException) { return ""; }
+            catch (UnauthorizedAccessException) { return ""; }
+        }
+        static readonly string[] SessionSuffixes = { "", ".started", ".cancel", ".ready", ".cleanup", ".recovering", ".error", ".command" };
+        // Remove the previous session's files before starting the next one. Markers are
+        // also token-checked, so a file that cannot be removed is still never trusted.
+        public static void ClearSessionFiles(string stateFile) {
+            foreach (string suffix in SessionSuffixes) {
+                string path = stateFile + suffix;
+                for (int attempt = 0; attempt < 20 && System.IO.File.Exists(path); attempt++) {
+                    try { System.IO.File.Delete(path); }
+                    catch (System.IO.IOException) { Thread.Sleep(100); }
+                    catch (UnauthorizedAccessException) { Thread.Sleep(100); }
+                }
+            }
+        }
         public static int Run(string exe, string hook, string routeScript, string stateFile, string user, SecureString password) {
             bool cancelled = false;
             ConsoleCancelEventHandler handler = delegate(object s, ConsoleCancelEventArgs e) {
@@ -55,6 +79,7 @@ namespace NtutVpn {
                     info.EnvironmentVariables["NTUT_ROUTE_WORKER"] = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(hook), "route-worker.js");
                     info.EnvironmentVariables["NTUT_EVENT_TOKEN"] = token;
                     info.EnvironmentVariables["NTUT_STATE_FILE"] = stateFile;
+                    ClearSessionFiles(stateFile);
                     Console.WriteLine("[VPN] Starting; consecutive failures: {0}/3. Ctrl+C disconnects.", failures);
                     using (var job = new ChildJob()) using (var child = new Process()) {
                         child.StartInfo = info;
@@ -89,9 +114,7 @@ namespace NtutVpn {
                                 while (lines.TryDequeue(out line)) {
                                     Console.WriteLine(line); // No raw client output is written to disk.
                                 }
-                                string state = "";
-                                try { state = System.IO.File.ReadAllText(stateFile); }
-                                catch (System.IO.IOException) { }
+                                string state = ReadShared(stateFile);
                                 if (state != lastState) {
                                     lastState = state;
                                     if (state.StartsWith(token + ":connected:", StringComparison.Ordinal)) {
@@ -114,6 +137,8 @@ namespace NtutVpn {
                                     } else if (state.StartsWith(token + ":disconnected:", StringComparison.Ordinal)) {
                                         connected.Reset();
                                         Console.WriteLine("[VPN] Tunnel interrupted; OpenConnect is handling recovery.");
+                                    } else if (state.StartsWith(token + ":cancelled:", StringComparison.Ordinal)) {
+                                        Console.WriteLine("[VPN] Route/DNS setup skipped because this session is disconnecting.");
                                     }
                                 }
                                 if (connected.IsRunning && connected.Elapsed.TotalSeconds >= 60 && !stable) {
@@ -123,13 +148,13 @@ namespace NtutVpn {
                                 if (setupWait.IsRunning && setupWait.Elapsed.TotalSeconds >= 120) {
                                     setupFailed = true; setupWait.Reset();
                                     Console.WriteLine("[ERROR] Route/DNS setup exceeded 120 seconds; inspect network configuration.");
-                                    try { Console.WriteLine("[ERROR] Last routing command: " + System.IO.File.ReadAllText(stateFile + ".command")); }
-                                    catch (System.IO.IOException) { }
+                                    string lastCommand = ReadShared(stateFile + ".command");
+                                    if (lastCommand.Length != 0) Console.WriteLine("[ERROR] Last routing command: " + lastCommand);
                                 }
                                 if (setupFailed && !child.HasExited) { child.Kill(); child.WaitForExit(); exited = true; }
                                 if (exited) {
-                                    bool wasStarted = System.IO.File.Exists(stateFile + ".started");
-                                    bool cleaned = System.IO.File.Exists(stateFile + ".cleanup");
+                                    bool wasStarted = ReadShared(stateFile + ".started").StartsWith(token, StringComparison.Ordinal);
+                                    bool cleaned = ReadShared(stateFile + ".cleanup").StartsWith(token, StringComparison.Ordinal);
                                     if (!wasStarted || cleaned || setupFailed) break;
                                     if (!exitWait.IsRunning) exitWait.Start();
                                     if (exitWait.Elapsed.TotalSeconds >= 60) {
